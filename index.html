@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="index.css">
+    <script src="node_modules/jquery/dist/jquery.js"></script>
+
+
+</head>
+<body>
+
+<div id = 'nav_bar'>
+    <div id="address">
+        <input type="text" id="root-address"  >
+        <button id="go-to-address">Go to!</button>
+    </div>
+</div>
+<div class = 'table_div'>
+    <div id = 'browser'>
+        <ul id="browser_ul"></ul>
+    </div>
+    <div id = 'content'></div>
+</div>
+
+
+<div id="context_menu">
+    <span class="menu_item" id="create_directory">Create directory</span>
+    <span class="menu_item" id="create_file">Create new file</span>
+    <span class="menu_item" id="rename_file">Rename</span>
+    <span class="menu_item" id="delete_file">Delete</span>
+</div>
+
+
+<script src="logic.js"></script>
+<script src="view.js"></script>
+</body>
+</html>
