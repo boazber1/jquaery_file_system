@@ -122,6 +122,7 @@ function initContextMenu() {
     addListenerClickToCreateFile();
     addListenerClickToRename();
     addListenerClickToDelete();
+    addListenerClickToGoToButton();
 }
 
 
@@ -197,6 +198,16 @@ function addListenerRightClickUpdateTargetId(icon) {
     )
 }
 
+function addListenerClickToGoToButton() {
+    $('#go-to-address').click(function () {
+        var searchPath = $('#root-address').val();
+        if(searchPath === undefined) return;
+            var file = getFileByPath(searchPath);
+            if(file === undefined) return;
+            drawContent(file._id)
+     });
+}
+
 
 
 /*  ID = targetID   */
@@ -253,6 +264,32 @@ function addListenerClickToDelete() {
         // 3.2 draw files or directories on content (optional)
         // last. targetId = -1
     });
+}
+
+function getFileByPath(path) {
+
+    var splitPath = path.split('\\');
+    var root = fileSystem.getFileById(0);
+
+    if(path == "ROOT" || path == "ROOT\\")
+        return root;
+
+
+    var subPaths = splitPath.splice(1);
+
+    var children = root._children;
+    var foundFile = undefined;
+
+    for(var i = 0; i < subPaths.length ; ++i) {
+        for(var j = 0; j < children.length ; ++j) {
+            if(children[j]._name == subPaths[i] && children[j]._type == "directory") {
+                foundFile = children[j];
+                children = children[j]._children;
+                break;
+            }
+        }
+    }
+    return foundFile;
 }
 
 function updateCurrentRootAddress(fileId){
