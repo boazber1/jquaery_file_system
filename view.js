@@ -4,11 +4,17 @@
 var fileSystem;
 var targetId = -1;
 var currentLocationId = -1;
+var editFileWindow = $('#text-file-container').clone();
+var backHistory = [];
+var forwardHistory = [];
 
 $(document).ready(function () {
-    createFileSystem();
+    // createFileSystem();
+    createSystem();
     initBrowser();
     initContextMenu();
+    goBack();
+    $('#text-file-container').remove;
 
 });
 
@@ -160,9 +166,12 @@ function addListenerDblClickToContentFileIcon(icon) {
     if (icon.attr("src") === 'close.png'){
         icon.click(function () {
             drawContent(parseInt($(this).attr("index")));
+            backHistory.push(parseInt($(this).attr('index')));
         });
-    } else {
-        // TODO: open edit file window
+    } else if(icon.attr('src') === 'text.png') {
+        icon.click(function () {
+            drawingTheContentFileWithADiv(parseInt($(this).attr('index')));
+        })
     }
 }
 
@@ -201,10 +210,30 @@ function addListenerRightClickUpdateTargetId(icon) {
 function addListenerClickToGoToButton() {
     $('#go-to-address').click(function () {
         var searchPath = $('#root-address').val();
-        if(searchPath === undefined) return;
-            var file = getFileByPath(searchPath);
-            if(file === undefined) return;
-            drawContent(file._id)
+        searchPath = searchPath.split('\\');
+        if(searchPath[0] !== 'ROOT'){
+            alert('No such address called:' + searchPath);
+        }
+
+        var currentFolderId = 0;
+        var flag = true;
+        var index = 1;
+
+        while(flag && index < searchPath.length  ){
+           var file = fileSystem.getFileById(currentFolderId);
+           if(fileSystem.isFileNameExist(currentFolderId, searchPath[index], 'directory')){
+               for(var i = 0; i < file._children.length; i++){
+                   if(file._children[i]._name === searchPath[index] ){
+                       currentFolderId = file._children[i]._id;
+                   }
+               }
+           } else {
+                alert('no path called ' + ($('#root-address').val()));
+               flag = false;
+           }
+           index++
+        }
+        drawContent(currentFolderId);
      });
 }
 
@@ -226,6 +255,7 @@ function addListenerClickToCreateFolder() {
             } else {
                 appendNewUl(targetId, fileSystem.getLastId(),folderName);
             }
+            fileSystem.savingToLocalStorage();
         }
     });
 
@@ -239,65 +269,64 @@ function addListenerClickToCreateFile() {
         }
         if(fileName !== null){
             fileName = fileSystem.getUnduplicatedFileName(targetId, fileName, 'file');
-            console.log(fileName);
             fileSystem.addNewTextFile(fileName, targetId, '');
             drawContent(targetId);
         }
+        fileSystem.savingToLocalStorage();
     });
 }
 
 function addListenerClickToRename() {
     $('#rename_file').click(function () {
-        // 1. fileSystem --> file rename function
-        // 2. check type
-        // 3.1 draw only directory on browser
-        // 3.2 draw file or directory on content (optional)
-        // last. targetId = -1
+
+        $('#context_menu').fadeOut(200);
+        var newName = prompt('Rename');
+        var targetFile = fileSystem.getFileById(targetId);
+        var theParent = fileSystem.findParent(targetId);
+        if(newName !== targetFile._name){
+            closeBrowserDirectory(theParent._id);
+            targetFile._name = newName;
+            openBrowserDirectory(theParent._id);
+            if(currentLocationId == theParent._id){
+                drawContent(theParent._id);
+            }
+
+
+        } else {
+            alert('name already exists')
+        }
+        targetId = -1;
+        fileSystem.savingToLocalStorage();
+
     });
+
+
+
 }
 
 function addListenerClickToDelete() {
     $('#delete_file').click(function () {
-        // 1. fileSystem delete function
-        // 2. check type
-        // 3.1 draw only directories on browser (close and open)
-        // 3.2 draw files or directories on content (optional)
-        // last. targetId = -1
+        $('#context_menu').fadeOut(200);
+
+        var theParent = fileSystem.findParent(targetId);
+        closeBrowserDirectory(theParent._id);
+        theParent.deleteChild(targetId);
+        fileSystem.deleteFile(targetId);
+        openBrowserDirectory(theParent._id);
+
+        drawContent(theParent._id);
+        fileSystem.savingToLocalStorage();
+        targetId = -1;
     });
 }
 
-function getFileByPath(path) {
 
-    var splitPath = path.split('\\');
-    var root = fileSystem.getFileById(0);
-
-    if(path == "ROOT" || path == "ROOT\\")
-        return root;
-
-
-    var subPaths = splitPath.splice(1);
-
-    var children = root._children;
-    var foundFile = undefined;
-
-    for(var i = 0; i < subPaths.length ; ++i) {
-        for(var j = 0; j < children.length ; ++j) {
-            if(children[j]._name == subPaths[i] && children[j]._type == "directory") {
-                foundFile = children[j];
-                children = children[j]._children;
-                break;
-            }
-        }
-    }
-    return foundFile;
-}
 
 function updateCurrentRootAddress(fileId){
     var folderNameArr = [];
     var folderName = '';
     var address = '';
     while (fileId > -1 ){
-        console.log(fileId);
         var file = fileSystem.getFileById(fileId);
         folderNameArr.push(file._name);
         fileId = file._parentId;
@@ -307,22 +336,84 @@ function updateCurrentRootAddress(fileId){
         folderName = folderNameArr.pop();
         folderName +='\\';
         address += folderName;
-    }
 
+    }
+    address = address.substring(0, address.length-1);
     $('#root-address').val(address);
 }
 
-function createFileSystem() {
+// function createFileSystem() {
+//     fileSystem = new FileSystem('ROOT');
+//     fileSystem.addNewDirectory('sub1', 0);
+//     fileSystem.addNewTextFile('file1', 0, 'some text');
+//     fileSystem.addNewDirectory('sub2', 1);
+//     fileSystem.addNewDirectory('sub3', 0);
+// }
+
+
+function createSystem(){
+    var system = JSON.parse(localStorage.getItem('FileSystem'));
+    console.log(system);
     fileSystem = new FileSystem('ROOT');
-    fileSystem.addNewDirectory('sub1', 0);
-    fileSystem.addNewTextFile('file1', 0, 'some text');
-    fileSystem.addNewDirectory('sub2', 1);
-    fileSystem.addNewDirectory('sub3', 0);
+    if(system !== null){
+        drawingTheSavedSystem(system);
+    }
+}
+
+function drawingTheSavedSystem(system){
+    console.log(system);
+    for(var i = 1; i < system.length; i++){
+        if(system[i][2] ==="directory"){
+            fileSystem.addNewDirectory(system[i][1],system[i][3])
+
+        }
+
+        if(system[i][2] === "file"){
+            fileSystem.addNewTextFile(system[i][1],system[i][3],system[i][4])
+
+        }
+    }
+}
+
+function drawingTheContentFileWithADiv(fileId) {
+    var newEditFileWindow = editFileWindow.clone();
+    $('#content').append(newEditFileWindow);
+    newEditFileWindow.show();
+    var targetFile = fileSystem.getFileById(fileId);
+    $('#file-text').val(targetFile._content);
+    $('#save').click(function () {
+        var targetFile = fileSystem.getFileById(fileId);
+        targetFile.changeContent($('#file-text').val());
+        newEditFileWindow.remove();
+        fileSystem.savingToLocalStorage();
+    })
+    $('#exit').click(function () {
+        newEditFileWindow.remove();
+    })
 }
 
 
+function goBack(){
+    $('#back').click(function(){
+        if(backHistory.length > 0){
+            var folderInHistoryToGoBack = backHistory.pop();
+            forwardHistory.push(folderInHistoryToGoBack);
+            drawContent(folderInHistoryToGoBack);
+        } else {
 
+            drawContent(0);
+        }
 
+    });
+
+    $('#forward').click(function(){
+        if(forwardHistory.length > 0){
+            var folderInHistoryToGoForward = forwardHistory.pop();
+            backHistory.push(folderInHistoryToGoForward);
+            drawContent(folderInHistoryToGoForward);
+        }
+    })
+}
 
 
 

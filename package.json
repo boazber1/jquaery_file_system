@@ -1,0 +1,25 @@
+{
+  "name": "jq_file_system",
+  "version": "1.0.0",
+  "description": "",
+  "main": "logic.js",
+  "scripts": {
+	"start":"node_modules/.bin/http-server",
+    "test": "echo \"Error: no test specified\" && exit 1"
+	
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/boazber1/jquaery_file_system.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/boazber1/jquaery_file_system/issues"
+  },
+  "homepage": "https://github.com/boazber1/jquaery_file_system#readme",
+  "dependencies": {
+    "http-server": "^0.9.0",
+    "jquery": "^3.1.1"
+  }
+}

@@ -61,8 +61,18 @@ FileSystem.prototype.addNewTextFile = function (name, parentId, content) {
 FileSystem.prototype.deleteFile = function(id){
     var fileToDelete = this._files[id];
     var parentFile = this._files[fileToDelete._parentId];
+
     parentFile.deleteChild(fileToDelete);
-    this._files[id] = undefined;// in order to live the index structure organized
+
+    for(var i = 0; i < this._files.length; i++){
+        if(this._files[i]){
+            if(this._files[i]._parentId == fileToDelete._id){
+                this._files[i] = undefined;
+            }
+        }
+    }
+
+    this._files[id] = undefined;
 };
 
 FileSystem.prototype.getFileById = function (id) {
@@ -101,7 +111,22 @@ FileSystem.prototype.getUnduplicatedFileName = function (folderId, name, type){
     return fileName;
 }
 
+FileSystem.prototype.findParent = function (id) {
+    var targetFile = this._files[id];
+    var parent = this._files[targetFile._parentId];
+    return parent;
+}
 
+FileSystem.prototype.savingToLocalStorage = function(){
+    var saveArray = [];
+    for(var i = 0; i < this._files.length; i++){
+        if(this._files[i]) {
+            saveArray.push([this._files[i]._id, this._files[i]._name, this._files[i]._type,
+                this._files[i]._parentId, this._files[i]._content]);
+        }
+    }
+    localStorage.setItem('FileSystem',JSON.stringify(saveArray));
+};
 
 
 
